@@ -99,28 +99,6 @@ bot.on('callback_query', async (callbackQuery) => {
     }
 });
 
-async function getResponseFromDatabase(userMessage, reqData) {
-    const [datas] = await db.query(
-        `SELECT title  FROM ${reqData}s`
-    );
-
-    const dataArr = datas.map(obj => obj.title);
-    const bestMatchKey = stringSimilarity.findBestMatch(userMessage, dataArr);
-    if (bestMatchKey.bestMatch.rating > 0.2) {
-        try {
-            const [rows] = await db.query(
-                `SELECT context FROM ${reqData}s WHERE title like "%${bestMatchKey.bestMatch.target}%"`
-
-            );
-            return rows.length > 0 ? rows[0].context : null;
-        } catch (error) {
-            return "maaf inputan tidak dapat ditemukan";
-        }
-    } else {
-        return "maaf inputan tidak dapat ditemukan";
-    }
-}
-
 // Event ketika bot menerima pesan
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
@@ -130,26 +108,12 @@ bot.on('message', async (msg) => {
     } else if (userMessage == "/end" || userMessage == "end") {
         bot.sendMessage(chatId, "Senang bisa membantu teman🙏😁")
     } else {
-        let foundData = "";
-        function filterByID(item) {
-            if (item.chatId == chatId) {
-                return true;
-            }
-            return false;
-        }
-
-        foundData = jsonDataBefore.filter(filterByID)
-        if (foundData != "" || foundData != []) {
-            const dbResponse = await getResponseFromDatabase(userMessage, foundData[0]?.message);
-            if (dbResponse) {
-                await bot.sendMessage(chatId, dbResponse);
-            } else {
-                await bot.sendMessage(chatId, "Maaf, saya tidak menemukan informasi yang teman cari.😔");
-            }
-
-            buttonFunc(msg, "Ada lagi yang dapat Chocky bantu : ", menuData)
+        if (userMessage == "skripsi") {
+            bot.sendMessage(chatId, "ini adalah response dari skripsi")
+        } else if (userMessage == "pkl") {
+            bot.sendMessage(chatId, "ini adalah response dari pkl")
         } else {
-            buttonFunc(msg, "Maaf, silhakan pilih opsi berikut : ", menuData)
+            bot.sendMessage(chatId, "Maaf data tidak ditemukan🙏")
         }
     }
 });
