@@ -1,5 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
 const stringSimilarity = require('string-similarity');
+const fuzz = require('fuzzball');
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 const fs = require('fs');
@@ -85,7 +86,7 @@ bot.on('callback_query', async (callbackQuery) => {
         await checkId(chatId, selectedOption)
         await bot.sendMessage(chatId, responseText)
         await bot.sendMessage(chatId, `Untuk melanjutkan permintaan anda, silahkan masukkan judul atau bagan yang ingin diketahui : 
-        (Contoh: Latar Belakang ${responseText})`);
+        (Contoh: pengertian ${selectedOption})`);
         await bot.answerCallbackQuery(callbackQuery.id);
     } else {
         if (selectedOption === 'menu_utama') {
@@ -106,62 +107,125 @@ bot.on('callback_query', async (callbackQuery) => {
             foundData = jsonDataBefore.filter(filterByID)
             if (foundData != "" || foundData != []) {
                 const [rows] = await db.query(
-                    `SELECT context FROM ${foundData[0]?.message}s WHERE title like "%${selectedOption}%"`
-
+                    `SELECT context FROM ${foundData[0]?.message}s WHERE keybot like "%${selectedOption}%" limit 10000`
                 );
-                let resData = rows.length > 0 ? rows[0].context : null;
-                await bot.sendMessage(chatId, resData)
-                await buttonFunc(msg, "Ada lagi yang dapat Chocky bantu : ", menuData)
+
+                let datas = rows.length > 0 ? rows[0].context : null;
+                await bot.sendMessage(chatId, `Berikut penjelasan terkait '${selectedOption}' : `);
+                // Bagi pesan panjang menjadi potongan-potongan
+                const messageChunks = splitMessage(datas);
+                // Kirim potongan pesan satu per satu
+
+                messageChunks.forEach((chunk) => {
+                    bot.sendMessage(chatId, chunk);
+                });
+
+                await buttonFunc(callbackQuery.message, "Ada lagi yang dapat Chocky bantu : ", menuData)
 
             } else {
-                buttonFunc(msg, "Maaf, silhakan pilih opsi berikut : ", menuData)
+                buttonFunc(callbackQuery.message, "Maaf, silhakan pilih opsi berikut : ", menuData)
             }
         }
     }
 });
 
+// Fungsi untuk memotong pesan panjang menjadi bagian-bagian kecil
+function splitMessage(message, maxLength = 4096) {
+    const chunks = [];
+    while (message.length > maxLength) {
+        let chunk = message.slice(0, maxLength);
+        const lastSpace = chunk.lastIndexOf(' '); // Memotong di spasi terakhir agar kata tidak terpotong
+        if (lastSpace > 0) {
+            chunk = chunk.slice(0, lastSpace);
+        }
+        chunks.push(chunk);
+        message = message.slice(chunk.length).trim();
+    }
+    if (message.length > 0) {
+        chunks.push(message);
+    }
+    return chunks;
+}
+
 async function getResponseFromDatabase(userMessage, reqData, msg) {
     const chatId = msg.chat.id;
-
     const [datas] = await db.query(
-        `SELECT title  FROM ${reqData}s`
+        `SELECT keybot FROM ${reqData}s`
     );
-    const dataArr = datas.map(obj => obj.title);
-    const bestMatchKey = stringSimilarity.findBestMatch(userMessage, dataArr);
-    if (bestMatchKey.bestMatch.rating > 0.49) {
+
+    const dataArr = datas.map(obj => obj.keybot);
+    const bestMatchKey = fuzz.extract(userMessage, dataArr);
+    var datasFil = [];
+    var datasFil100 = [];
+
+    for (let index = 0; index < bestMatchKey.length; index++) {
+        if (bestMatchKey[index][1] >= 50) {
+            if (bestMatchKey[index][1] == 100) {
+                let dt100 = [
+                    {
+                        text: bestMatchKey[index][0],
+                        callback_data: bestMatchKey[index][0],
+                    }
+                ];
+                datasFil100.push(dt100)
+            } else {
+                let dt = [
+                    {
+                        text: bestMatchKey[index][0],
+                        callback_data: bestMatchKey[index][0],
+                    }
+                ];
+                datasFil.push(dt)
+            }
+        }
+    }
+
+    if (datasFil100.length != 0) {
         try {
             const [rows] = await db.query(
-                `SELECT context FROM ${reqData}s WHERE title like "%${bestMatchKey.bestMatch.target}%"`
-
+                `SELECT context FROM ${reqData}s WHERE keybot like "%${bestMatchKey[0][0]}%" limit 10000`
             );
+
             let datas = rows.length > 0 ? rows[0].context : null;
-            await bot.sendMessage(chatId, `Berikut penjelasan terkait '${bestMatchKey.bestMatch.target}' : `);
-            await bot.sendMessage(chatId, datas);
+            await bot.sendMessage(chatId, `Berikut penjelasan terkait '${bestMatchKey[0][0]}' : `);
+            // Bagi pesan panjang menjadi potongan-potongan
+            const messageChunks = splitMessage(datas);
+            // Kirim potongan pesan satu per satu
+
+            messageChunks.forEach((chunk) => {
+                bot.sendMessage(chatId, chunk);
+            });
+            // await bot.sendMessage(chatId, datas);
         } catch (error) {
             await bot.sendMessage(chatId, "Maaf, saya tidak menemukan informasi yang anda cari.😔");
         }
     } else {
-        let data = bestMatchKey.ratings;
-        let filData = data.filter((item) => item.rating > 0)
-        if (filData.length == 0) {
-            await bot.sendMessage(chatId, "Maaf, saya tidak menemukan informasi yang anda cari.😔");
-        } else {
-            var datasFil = [];
+        if (datasFil.length == 1) {
+            try {
+                const [rows] = await db.query(
+                    `SELECT context FROM ${reqData}s WHERE keybot like "%${bestMatchKey[0][0]}%" limit 10000`
+                );
 
-            filData.forEach((val) => {
-                if (val.rating > 0.2) {
-                    let dt = [
-                        {
-                            text: val.target,
-                            callback_data: val.target,
-                        }
-                    ];
-                    datasFil.push(dt)
-                }
-            })
-            buttonFunc(msg, "Apakah ini yang anda maksud : ", datasFil)
+                let datas = rows.length > 0 ? rows[0].context : null;
+                await bot.sendMessage(chatId, `Berikut penjelasan terkait '${bestMatchKey[0][0]}' : `);
+                // Bagi pesan panjang menjadi potongan-potongan
+                const messageChunks = splitMessage(datas);
+                // Kirim potongan pesan satu per satu
+
+                messageChunks.forEach((chunk) => {
+                    bot.sendMessage(chatId, chunk);
+                });
+                // await bot.sendMessage(chatId, datas);
+            } catch (error) {
+                await bot.sendMessage(chatId, "Maaf, saya tidak menemukan informasi yang anda cari.😔");
+            }
+        } else if (datasFil.length > 1) {
+            await buttonFunc(msg, "Apakah ini yang anda maksud : ", datasFil)
+        } else {
+            await bot.sendMessage(chatId, "Maaf, saya tidak menemukan informasi yang anda cari.😔");
         }
     }
+
     await buttonFunc(msg, "Ada lagi yang dapat Chocky bantu : ", menuData)
 
 }
@@ -184,10 +248,13 @@ bot.on('message', async (msg) => {
         }
 
         foundData = jsonDataBefore.filter(filterByID)
-        if (foundData != "" || foundData != []) {
-            await getResponseFromDatabase(userMessage, foundData[0]?.message, msg);
+        if (foundData.length == 0) {
         } else {
-            buttonFunc(msg, "Maaf, silhakan pilih opsi berikut : ", menuData)
+            if (foundData != "" || foundData != []) {
+                await getResponseFromDatabase(userMessage, foundData[0]?.message, msg);
+            } else {
+                buttonFunc(msg, "Maaf, silhakan pilih opsi berikut : ", menuData)
+            }
         }
     }
 });
