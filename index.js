@@ -23,7 +23,7 @@ var startData = [
             callback_data: 'skripsi',
         },
         {
-            text: 'PKL',
+            text: 'KP / Magang',
             callback_data: 'pkl',
         }
     ]
@@ -119,8 +119,9 @@ bot.on('callback_query', async (callbackQuery) => {
                 messageChunks.forEach((chunk) => {
                     bot.sendMessage(chatId, chunk);
                 });
-
-                await buttonFunc(callbackQuery.message, "Ada lagi yang dapat Chocky bantu : ", menuData)
+                setTimeout(async () => {
+                    await buttonFunc(callbackQuery.message, "Ada lagi yang dapat Chocky bantu : ", menuData)
+                  }, 2000);
 
             } else {
                 buttonFunc(callbackQuery.message, "Maaf, silhakan pilih opsi berikut : ", menuData)
@@ -159,7 +160,7 @@ async function getResponseFromDatabase(userMessage, reqData, msg) {
     var datasFil100 = [];
 
     for (let index = 0; index < bestMatchKey.length; index++) {
-        if (bestMatchKey[index][1] >= 50) {
+        if (bestMatchKey[index][1] > 50) {
             if (bestMatchKey[index][1] == 100) {
                 let dt100 = [
                     {
@@ -226,8 +227,9 @@ async function getResponseFromDatabase(userMessage, reqData, msg) {
         }
     }
 
-    await buttonFunc(msg, "Ada lagi yang dapat Chocky bantu : ", menuData)
-
+    setTimeout(async () => {
+        await buttonFunc(msg, "Ada lagi yang dapat Chocky bantu : ", menuData)
+      }, 2000);
 }
 
 // Event ketika bot menerima pesan
