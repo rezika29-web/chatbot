@@ -81,7 +81,7 @@ bot.on('callback_query', async (callbackQuery) => {
         if (selectedOption === 'skripsi') {
             responseText = 'Anda memilih opsi : Skripsi';
         } else if (selectedOption === 'pkl') {
-            responseText = 'Anda memilih opsi : Pkl';
+            responseText = 'Anda memilih opsi : KP / Magang';
         }
         await checkId(chatId, selectedOption)
         await bot.sendMessage(chatId, responseText)
