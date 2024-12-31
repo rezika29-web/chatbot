@@ -23,7 +23,7 @@ var startData = [
             callback_data: 'skripsi',
         },
         {
-            text: 'KP / Magang',
+            text: 'Magang',
             callback_data: 'pkl',
         }
     ]
@@ -81,7 +81,7 @@ bot.on('callback_query', async (callbackQuery) => {
         if (selectedOption === 'skripsi') {
             responseText = 'Anda memilih opsi : Skripsi';
         } else if (selectedOption === 'pkl') {
-            responseText = 'Anda memilih opsi : KP / Magang';
+            responseText = 'Anda memilih opsi : Magang';
         }
         await checkId(chatId, selectedOption)
         await bot.sendMessage(chatId, responseText)
