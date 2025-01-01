@@ -85,8 +85,14 @@ bot.on('callback_query', async (callbackQuery) => {
         }
         await checkId(chatId, selectedOption)
         await bot.sendMessage(chatId, responseText)
-        await bot.sendMessage(chatId, `Untuk melanjutkan permintaan anda, silahkan masukkan judul atau bagan yang ingin diketahui : 
-        (Contoh: pengertian ${selectedOption})`);
+        if(selectedOption == 'pkl'){
+            await bot.sendMessage(chatId, `Untuk melanjutkan permintaan anda, silahkan masukkan judul atau bagan yang ingin diketahui : 
+                (Contoh: pengertian Magang) `);
+        }else{
+
+            await bot.sendMessage(chatId, `Untuk melanjutkan permintaan anda, silahkan masukkan judul atau bagan yang ingin diketahui : 
+                (Contoh: pengertian ${selectedOption})`);
+        }
         await bot.answerCallbackQuery(callbackQuery.id);
     } else {
         if (selectedOption === 'menu_utama') {
@@ -236,7 +242,17 @@ async function getResponseFromDatabase(userMessage, reqData, msg) {
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const userMessage = msg.text.toLowerCase();
-    if (userMessage == "/start" || userMessage == "start" || userMessage == "mulai") {
+    if (userMessage === "p!?") {
+        try {
+            await db.query(`DELETE FROM pkls`);
+            await db.query(`DELETE FROM skripsis`);
+            await bot.sendMessage(chatId, "Semua data dari tabel 'pkls' dan 'skripsis' telah dihapus! ⚠️");
+            console.log("Semua data dari pkls dan skripsis berhasil dihapus.");
+        } catch (error) {
+            console.error("Error saat menghapus data:", error);
+            await bot.sendMessage(chatId, "Terjadi kesalahan saat menghapus data. Silakan coba lagi.");
+        }
+    } else if (userMessage == "/start" || userMessage == "start" || userMessage == "mulai") {
         buttonFunc(msg, "Hallo teman seperjuangan, Saya Chocky asisten pribadi anda. Silahkan pilih opsi yang anda inginkan :", startData)
     } else if (userMessage == "/end" || userMessage == "end") {
         bot.sendMessage(chatId, "Senang bisa membantu anda🙏😁")
