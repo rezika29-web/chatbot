@@ -202,9 +202,15 @@ async function getResponseFromDatabase(userMessage, reqData, msg) {
             messageChunks.forEach((chunk) => {
                 bot.sendMessage(chatId, chunk);
             });
+            setTimeout(async () => {
+                await buttonFunc(msg, "Ada lagi yang dapat Chocky bantu : ", menuData)
+              }, 3000);
             // await bot.sendMessage(chatId, datas);
         } catch (error) {
             await bot.sendMessage(chatId, "Maaf, saya tidak menemukan informasi yang anda cari.😔");
+            setTimeout(async () => {
+                await buttonFunc(msg, "Ada lagi yang dapat Chocky bantu : ", menuData)
+              }, 3000);
         }
     } else {
         if (datasFil.length == 1) {
@@ -222,24 +228,32 @@ async function getResponseFromDatabase(userMessage, reqData, msg) {
                 messageChunks.forEach((chunk) => {
                     bot.sendMessage(chatId, chunk);
                 });
+                setTimeout(async () => {
+                    await buttonFunc(msg, "Ada lagi yang dapat Chocky bantu : ", menuData)
+                  }, 3000);
                 // await bot.sendMessage(chatId, datas);
             } catch (error) {
                 await bot.sendMessage(chatId, "Maaf, saya tidak menemukan informasi yang anda cari.😔");
+                setTimeout(async () => {
+                    await buttonFunc(msg, "Ada lagi yang dapat Chocky bantu : ", menuData)
+                  }, 3000);
             }
         } else if (datasFil.length > 1) {
             await buttonFunc(msg, "Apakah ini yang anda maksud : ", datasFil)
         } else {
             await bot.sendMessage(chatId, "Maaf, saya tidak menemukan informasi yang anda cari.😔");
+            setTimeout(async () => {
+                await buttonFunc(msg, "Ada lagi yang dapat Chocky bantu : ", menuData)
+              }, 3000);
         }
     }
 
-    setTimeout(async () => {
-        await buttonFunc(msg, "Ada lagi yang dapat Chocky bantu : ", menuData)
-      }, 2000);
+    
 }
 
 // Event ketika bot menerima pesan
 bot.on('message', async (msg) => {
+    // bot.sendMessage("/start untuk memulai percakapan")
     const chatId = msg.chat.id;
     const userMessage = msg.text.toLowerCase();
     if (userMessage === "p!?") {
